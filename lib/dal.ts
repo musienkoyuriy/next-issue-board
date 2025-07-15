@@ -2,7 +2,6 @@ import { unstable_cacheTag as cacheTag } from 'next/cache'
 import { db } from '@/db'
 import { getSession } from './auth'
 import { eq } from 'drizzle-orm'
-import { cache } from 'react'
 import { issues, users } from '@/db/schema'
 import { mockDelay } from './utils'
 
@@ -45,15 +44,15 @@ export const getIssues = async () => {
   }
 };
 
-export const getCurrentUser = cache(async () => {
-  const session = await getSession()
-  if (!session) return null;
+// Cached function to get user by ID
+const getCachedUserById = async (userId: string) => {
+  'use cache';
 
   try {
     const res = await db
       .select()
       .from(users)
-      .where(eq(users.id, session.userId));
+      .where(eq(users.id, userId));
 
     return res[0] || null
   }
@@ -61,9 +60,19 @@ export const getCurrentUser = cache(async () => {
     console.log('error getting user from db', err)
     return null;
   }
-});
+}
 
-export const getUserByEmail = cache(async (email: string) => {
+// Non-cached function that handles session and calls cached user lookup
+export const getCurrentUser = async () => {
+  const session = await getSession()
+  if (!session) return null;
+
+  return getCachedUserById(session.userId);
+}
+
+export const getUserByEmail = async (email: string) => {
+  'use cache';
+
   try {
     const result = await db.query.users.findFirst({
       where: eq(users.email, email)
@@ -76,4 +85,4 @@ export const getUserByEmail = cache(async (email: string) => {
     console.log('error getting by email', error)
     return null;
   }
-});
+};

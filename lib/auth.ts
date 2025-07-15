@@ -4,7 +4,6 @@ import { cookies } from 'next/headers'
 import { db } from '@/db'
 import { users } from '@/db/schema'
 import * as jose from 'jose'
-import { cache } from 'react'
 
 // JWT types
 interface JWTPayload {
@@ -109,9 +108,6 @@ export async function createSession(userId: string) {
       sameSite: 'lax',
     })
 
-    // Log the JWT token (for development purposes only)
-    console.log('Generated JWT token:', token)
-
     return true
   } catch (error) {
     console.error('Error creating session:', error)
@@ -120,7 +116,7 @@ export async function createSession(userId: string) {
 }
 
 // Get current session from JWT
-export const getSession = cache(async () => {
+export async function getSession() {
   try {
     const cookieStore = await cookies()
     const token = cookieStore.get('auth_token')?.value
@@ -144,7 +140,7 @@ export const getSession = cache(async () => {
     console.error('Error getting session:', error)
     return null
   }
-})
+}
 
 // Delete session by clearing the JWT cookie
 export async function deleteSession() {
